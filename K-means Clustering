@@ -1,0 +1,58 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.spatial.distance import cdist
+np.random.seed(11)
+
+means = [[2, 2], [8, 3], [3, 6]]
+cov = [[1, 0], [0, 1]]
+N = 500
+X0 = np.random.multivariate_normal(means[0], cov, N)
+X1 = np.random.multivariate_normal(means[1], cov, N)
+X2 = np.random.multivariate_normal(means[2], cov, N)
+
+X = np.concatenate((X0, X1, X2), axis = 0)
+K = 3
+
+original_label = np.asarray([0]*N + [1]*N + [2]*N)
+def kmeans_display(X, label):
+    K = np.amax(label) + 1
+    X0 = X[label == 0, :]
+    X1 = X[label == 1, :]
+    X2 = X[label == 2, :]
+    
+    plt.plot(X0[:, 0], X0[:, 1], 'b^', markersize = 4, alpha = .8)
+    plt.plot(X1[:, 0], X1[:, 1], 'go', markersize = 4, alpha = .8)
+    plt.plot(X2[:, 0], X2[:, 1], 'rs', markersize = 4, alpha = .8)
+
+    plt.axis('equal')
+    plt.plot()
+    plt.show()
+print(original_label)
+kmeans_display(X, original_label)
+
+def centroids_init(X, K):
+    return X[np.random.choice(X.shape[0], K, replace = False)]
+def closet_label(X, centroids):
+    D = cdist(X, centroids)
+    return np.argmin(D, axis = 1)
+def new_centroids(X, label, centroids):
+    X0 = X[label == 0, :]
+    X1 = X[label == 1, :]
+    X2 = X[label == 2, :]
+    c0 = np.mean(X0, axis = 0).reshape(1, X.shape[1])
+    c1 = np.mean(X1, axis = 0).reshape(1, X.shape[1])
+    c2 = np.mean(X2, axis = 0).reshape(1, X.shape[1])
+    return np.concatenate((c0, c1, c2), axis = 0)
+def has_converged(centroids, new_centroids):
+    return np.array_equal(centroids, new_centroids)
+def k_means(X, K, original_label):
+    C = [centroids_init(X, K)]
+    L = [original_label]
+    while True:
+        label = closet_label(X, C[-1])
+        L.append(label)
+        C.append(new_centroids(X, label, C[-1]))
+        if has_converged(C[-1], C[-2]) == True:
+            break
+    return (C[-1], L[-1])
+Centroids, Label = k_means(X, K, original_label)
